@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace Learning.EventsAndDelegates
 {
@@ -72,20 +73,80 @@ namespace Learning.EventsAndDelegates
         }
     }
 
+    public class SendXmlFile
+    {
+        public void OnVideoEncoded(Object source, VideoEventArgs e)
+        {
+            Console.WriteLine($"SendXmlFile: Writting XML file to.. {1}", e.Video.Title);
+        }
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
-            var video = new Video() {Title = "Video 1"};
-            var videoEncoder = new VideoEncoder(); // publisher
-            var mailService = new MailService(); // subscriber
-            var messageService = new MessageService();
+            //var video = new Video() {Title = "Video 1"};
+            //var videoEncoder = new VideoEncoder(); // publisher
+            //var mailService = new MailService(); // subscriber
+            //var xmlFileService = new SendXmlFile();
+            //var messageService = new MessageService();
 
-            videoEncoder.VideoEncoded += mailService.OnVideoEncoded;
-            videoEncoder.VideoEncoded += messageService.OnVideoEncoded;
+            //videoEncoder.VideoEncoded += mailService.OnVideoEncoded;
+            //videoEncoder.VideoEncoded += messageService.OnVideoEncoded;
+            //videoEncoder.VideoEncoded += xmlFileService.OnVideoEncoded;
 
-            videoEncoder.Encode(video);
+            //videoEncoder.Encode(video);
 
+            IEnumerable<string> files = GetFiles("*.txt", @"D:\TMP\tmp1", @"D:\TMP\tmp2", @"D:\TMP\tmp3");
+            string[] directories = { @"D:\TMP\tmp1", @"D:\TMP\tmp2", @"D:\TMP\tmp3" };
+
+            foreach(var directory in directories)
+            {
+                foreach (var file in Directory.GetFiles(directory, "*.txt"))
+                {
+                    ReadFile(file);
+                }
+            }
+
+            FileSystemWatcher watcher = new FileSystemWatcher()
+            {
+                Path = $"C:\\TMP",
+                Filter = "*.txt"
+            };
+            // Add event handlers for all events you want to handle
+            watcher.Created += new FileSystemEventHandler(OnChanged);
+            // Activate the watcher
+            watcher.EnableRaisingEvents = true;
+            Console.WriteLine("Press \'q\' to quit the sample.");
+            while (Console.Read() != 'q') ;
         }
+
+        private static void OnChanged(object source, FileSystemEventArgs e)
+        {
+            // Specify what is done when a file is changed, created, or deleted.
+            Console.WriteLine("File: " + e.FullPath + " " + e.ChangeType);
+            System.Diagnostics.Debug.Write($"File: {e.FullPath} was added");
+
+            var contents = File.ReadAllText(e.FullPath);
+            Console.WriteLine($"File {e.FullPath} content is {contents}");
+            Thread.Sleep(400);
+            File.Delete(e.FullPath);
+        }
+
+        private static void ReadFile(string filePath)
+        {
+            var content = File.ReadAllText(filePath);
+            Console.WriteLine($"File {filePath} with content {content}");
+        }
+
+        private static IEnumerable<string> GetFiles(string searchPattern, params string[] directories)
+        {
+            foreach (string directory in directories)
+            {
+                foreach (string file in Directory.GetFiles(directory, searchPattern))
+                    yield return file;
+            }
+        }
+
     }
 }
